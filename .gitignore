@@ -1,0 +1,42 @@
+# Python and editors
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# Secrets and local settings
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Data and caches
+/data/raw/
+/data/processed/
+/data/cache/
+*.parquet
+*.arrow
+
+# Model weights and large generated artifacts
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+/checkpoints/
+/artifacts/
+**/checkpoints/
+**/runs/
+**/wandb/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
