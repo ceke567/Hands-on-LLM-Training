@@ -1,7 +1,7 @@
-import os
+import torch
 from pathlib import Path
 
-# 自动定位仓库根目录与数据路径，无论在哪个目录下运行都能找到
+# 自动定位仓库根目录与数据路径
 repo_root = Path(__file__).resolve().parent.parent.parent
 data_path = repo_root / "data" / "raw" / "input.txt"
 
@@ -11,31 +11,41 @@ if not data_path.exists():
 with open(data_path, "r", encoding="utf-8") as f:
     text = f.read()
 
-# 1. 统计总字符数与不重复字符集合
-total_chars = len(text)
+# 1. 构建字符表与 Tokenizer
 chars = sorted(list(set(text)))
 vocab_size = len(chars)
-
-print(f"数据读取成功！")
-print(f"文本总字符数: {total_chars:,}")
-print(f"不重复字符总数 (vocab_size 词表大小): {vocab_size}")
-print(f"包含的全部字符: {''.join(chars)!r}")
-
-# 2. 建立字符与数字编号的双向映射（Tokenizer 字典）
-stoi = {ch: i for i, ch in enumerate(chars)}  # 字符 -> 数字 ID
-itos = {i: ch for i, ch in enumerate(chars)}  # 数字 ID -> 字符
-
+stoi = {ch: i for i, ch in enumerate(chars)}
+itos = {i: ch for i, ch in enumerate(chars)}
 encode = lambda s: [stoi[c] for c in s]
 decode = lambda l: "".join([itos[i] for i in l])
 
-# 3. 验证“编码后再还原”
-test_str = "Hello, MiniGPT!"
-encoded = encode(test_str)
-decoded = decode(encoded)
+# 2. 将全部文本转为 PyTorch 整数张量 (Tensor)
+data = torch.tensor(encode(text), dtype=torch.long)
 
-print("\n--- Tokenizer 编解码测试 ---")
-print(f"原始测试文字: {test_str!r}")
-print(f"编码后数字列表: {encoded}")
-print(f"解码还原后文字: {decoded!r}")
-assert decoded == test_str, "还原失败，解码结果与原始文字不一致！"
-print("测试通过：任意文本能 100% 编号并无损还原！")
+# 3. 划分训练集 (90%) 与验证集 (10%)
+n = int(0.9 * len(data))
+train_data = data[:n]
+val_data = data[n:]
+
+print("=== 数据划分结果 ===")
+print(f"总 token 数: {len(data):,}")
+print(f"训练集大小 (90%): {len(train_data):,} tokens")
+print(f"验证集大小 (10%): {len(val_data):,} tokens")
+
+# 4. 抽查 3 组“输入 x -> 目标 y”样本 (以窗口长度 8 为例)
+torch.manual_seed(42)
+block_size = 8
+print(f"\n=== 抽查 3 组移位样本 (窗口长度 block_size={block_size}) ===")
+
+for i in range(3):
+    idx = torch.randint(len(train_data) - block_size, (1,)).item()
+    x = train_data[idx : idx + block_size]
+    y = train_data[idx + 1 : idx + block_size + 1]
+
+    print(f"\n--- 样本 {i + 1} ---")
+    print(f"输入 x (数字): {x.tolist()}")
+    print(f"目标 y (数字): {y.tolist()}")
+    print(f"输入 x (文本): {decode(x.tolist())!r}")
+    print(f"目标 y (文本): {decode(y.tolist())!r}")
+    is_shifted = torch.equal(x[1:], y[:-1])
+    print(f"向右错开一位核对: {'通过 (严格一致)' if is_shifted else '失败'}")
