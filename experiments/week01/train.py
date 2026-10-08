@@ -23,8 +23,8 @@ print(f"=== 运行设备: {device} ({torch.cuda.get_device_name(0) if torch.cuda
 
 batch_size = 32       # 批大小
 block_size = 128      # 上下文窗口
-max_iters = 200       # 短跑验证步数: 200 步
-eval_interval = 50    # 每 50 步评测一次验证 loss
+max_iters = 1500      # 正式训练步数: 1500 步
+eval_interval = 250   # 每 250 步评测一次验证 loss
 eval_iters = 20       # 评测时抽样 20 个批次求平均
 learning_rate = 3e-4  # AdamW 学习率
 
@@ -101,10 +101,14 @@ for iter in range(max_iters + 1):
     optimizer.step()
 
 total_time = time.time() - start_time
-print(f"\n短跑 200 步完成，总耗时: {total_time:.2f} 秒")
+total_tokens = max_iters * batch_size * block_size
+tokens_per_sec = total_tokens / total_time
+print(f"\n=== 正式训练 1500 步完成 ===")
+print(f"总耗时: {total_time:.2f} 秒")
+print(f"吞吐速率: {tokens_per_sec:,.0f} tokens/秒")
 
-# 6. 保存 Checkpoint (包含模型和优化器状态)
-ckpt_path = ckpt_dir / "ckpt_short_200.pt"
+# 6. 保存正式 Checkpoint (包含模型和优化器状态)
+ckpt_path = ckpt_dir / "minigpt_final.pt"
 torch.save({
     "step": max_iters,
     "model_state_dict": model.state_dict(),
@@ -112,10 +116,10 @@ torch.save({
     "vocab_size": vocab_size,
     "block_size": block_size,
 }, ckpt_path)
-print(f"Checkpoint 已成功保存至: {ckpt_path}")
+print(f"正式 Checkpoint 已成功保存至: {ckpt_path}")
 
-# 7. 短跑 200 步后的初步生成样例 (使用相同的 prompt 对比)
-print("\n--- [短跑 200 步后生成样例] ---")
-gen_tokens_after = model.generate(context, max_new_tokens=100)[0].tolist()
+# 7. 训练后生成样例 (使用相同的 prompt 对比，生成 250 个字符)
+print("\n--- [正式训练 1500 步后生成样例] ---")
+gen_tokens_after = model.generate(context, max_new_tokens=250)[0].tolist()
 print(repr(decode(gen_tokens_after)))
 print("------------------------------------------")
