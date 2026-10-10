@@ -27,15 +27,16 @@ n_embd = 768          # 隐藏维度 768
 n_head = 12           # 注意力头数 12
 block_size = 256      # 上下文窗口 256
 batch_size = 16       # 批大小 16
-max_iters = 200       # 200 步
-eval_interval = 50    # 每 50 步评测一次
-eval_iters = 10
+max_iters = 1500      # 正式深造: 1500 步
+eval_interval = 250   # 每 250 步评测一次
+eval_iters = 15
 
 # 学习率调度配置
-max_lr = 3e-4         # 峰值学习率
-min_lr = 3e-5         # 最低学习率 (衰减终点，设为 10% 峰值)
-warmup_iters = 20     # 线性预热步数 (前 10% 步数逐步爬坡)
-lr_decay_iters = 200  # 余弦衰减总步数
+max_lr = 4e-4         # 稍微提高峰值学习率加速收敛
+min_lr = 3e-5         # 最低学习率 (衰减终点)
+warmup_iters = 50     # 线性预热步数
+lr_decay_iters = 1500 # 余弦衰减总步数
+
 
 # 梯度裁剪阈值 (安全气囊)
 max_grad_norm = 1.0
@@ -146,12 +147,12 @@ total_tokens = max_iters * batch_size * block_size
 tokens_per_sec = total_tokens / total_time
 peak_mem = torch.cuda.max_memory_allocated() / (1024 ** 2) if torch.cuda.is_available() else 0
 
-print(f"\n=== W02-04 (学习率调度与梯度稳定性) 训练完成 ===")
-print(f"总耗时: {total_time:.2f} 秒")
+print(f"\n=== W02-04 (100M 1500步深造训练) 完成 ===")
+print(f"总耗时: {total_time:.2f} 秒 (约 {total_time/60:.1f} 分钟)")
 print(f"峰值显存: {peak_mem:.1f} MB")
 print(f"平均吞吐速率: {tokens_per_sec:,.0f} tokens/秒")
 
-# 4. 保存 Checkpoint (带当前 lr 和 step 信息)
+# 4. 保存 Checkpoint (更新至 week02_stable.pt 供 interact.py 调用)
 ckpt_path = ckpt_dir / "week02_stable.pt"
 torch.save({
     "step": max_iters,
@@ -161,4 +162,13 @@ torch.save({
     "block_size": block_size,
     "lr": lr,
 }, ckpt_path)
-print(f"权重已成功保存至: {ckpt_path}")
+print(f"新权重已成功覆盖保存至: {ckpt_path}")
+
+# 5. 快速生成一个 200 字符故事预览
+print("\n--- [1500步深造后故事预览 (Prompt: 'Once upon a time, Tim was ')] ---")
+test_prompt = "Once upon a time, Tim was "
+test_ctx = torch.tensor([encode(test_prompt)], dtype=torch.long, device=device)
+with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+    story_tokens = model.generate(test_ctx, max_new_tokens=200)[0].tolist()
+print(repr(decode(story_tokens)))
+print("----------------------------------------------------------------------")
