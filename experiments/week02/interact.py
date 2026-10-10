@@ -45,9 +45,9 @@ print("🎉 100M 模型加载成功！进入交互式续写模式。")
 print("你可以输入任意英文单词（比如: Lily, Once, A dog, The, Tim），模型会自回归往下编故事。")
 print("提示：输入 'q' 按回车即可退出。\n" + "=" * 55)
 
-# 3. 采样生成函数 (带温度调节，0.7~0.8 会更聚焦且生动)
+# 3. 采样生成函数 (带温度调节，放宽长度至 400 字符以生成完整段落)
 @torch.no_grad()
-def generate_text(prompt, max_new_tokens=100, temperature=0.75):
+def generate_text(prompt, max_new_tokens=400, temperature=0.75):
     # 过滤词表中没有的字符
     valid_tokens = encode(prompt)
     if not valid_tokens:
