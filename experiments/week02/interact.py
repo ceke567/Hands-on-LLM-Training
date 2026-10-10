@@ -77,8 +77,9 @@ while True:
             print("退出交互模式。")
             break
 
-        output = generate_text(user_input, max_new_tokens=120, temperature=0.75)
+        output = generate_text(user_input, max_new_tokens=400, temperature=0.75)
         print("\n🤖 模型续写生成：")
+
         print(output.strip())
         print("-" * 55)
     except (KeyboardInterrupt, EOFError):
